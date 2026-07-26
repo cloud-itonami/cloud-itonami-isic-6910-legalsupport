@@ -27,4 +27,4 @@
   :isco-2611 "cloud-itonami-isco-2611（単一法律事務所の案件ファイル管理）"
   :assoc-6910 "cloud-itonami-assoc-6910-jpn-nichibenren（日弁連 自主規制ルールカタログ）"
   :isic-7810 "cloud-itonami-isic-7810（雇用仲介。二面マッチングの先行実装）"}
- :itonami.blueprint/adr "com-junkawasaki/root 90-docs/adr/2607261200-legal-support-jurisdiction-gated-actor.edn"}
+ :itonami.blueprint/adr "com-junkawasaki/root 90-docs/adr/2607261500-legal-support-jurisdiction-gated-actor.edn"}
