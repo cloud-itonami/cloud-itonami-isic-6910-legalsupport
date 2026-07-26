@@ -122,3 +122,34 @@
              (get-in facts/catalog [jid :jurisdiction/revenue-modes
                                     :revenue/per-referral-fee :verdict]))
           (str jid " の per-referral-fee が :prohibited でない")))))
+
+(deftest a-model-rule-is-not-authority
+  (testing "ABA Model Rules はどこの法でもない —— 許可方向の結論を支えられない"
+    (let [models (for [j (facts/jurisdiction-ids) r (facts/rules j)
+                       :when (facts/model-only? r)] r)]
+      (is (= 3 (count models)) "収録している Model Rule は3本")
+      (doseq [r models]
+        (is (false? (facts/verified-rule? r))
+            (str (:rule/id r) " が許可方向の根拠になりうる状態になっている"))
+        (is (re-find #"ABA Model Rule" (:rule/title r)))))
+    (testing "拘束力の語彙が閉じていること"
+      (doseq [j (facts/jurisdiction-ids) r (facts/rules j)
+              :let [bf (:rule/binding-force r)]
+              :when bf]
+        (is (contains? facts/binding-forces bf))))
+    (testing "原典を読んでいても model-only なら拒否される（検証水準とは別の問い）"
+      (is (false? (facts/verified-rule? {:rule/verification :primary-source-read
+                                         :rule/binding-force :model-only}))))))
+
+(deftest the-only-us-law-in-the-catalog-is-dcs-own-rule
+  (testing "米国で一次で持てているのは D.C. の採用版だけ"
+    (let [r (facts/rule "USA-DC" "usa-dc.rule-5-4")]
+      (is (= :primary-source-read (:rule/verification r)))
+      (is (= :law (:rule/binding-force r)))
+      (is (facts/verified-rule? r))
+      (is (re-find #"sole purpose providing legal services" (:rule/quote r))
+          "5.4(b) の非弁護士参加の条件まで引用されていること")
+      (is (re-find #"501\(c\)\(3\)" (:rule/quote r))))
+    (is (re-find #"どこの法でもない"
+                 (get-in facts/catalog ["USA" :jurisdiction/note]))
+        "USA エントリがモデル規則の位置づけを明示していること")))

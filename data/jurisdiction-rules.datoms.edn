@@ -2099,8 +2099,9 @@
   :legal/gap "Legal Profession (Professional Conduct) Rules が未取得"}
  {:legal/rule-id "usa.aba-model-rule-5-4",
   :legal/fact-kind "rule",
+  :legal/binding-force "model-only",
   :legal/summary
-  "弁護士・法律事務所は非弁護士と法律報酬を分配してはならない（例外列挙あり）。1983年以来のモデル規則。",
+  "弁護士・法律事務所は非弁護士と法律報酬を分配してはならない（例外列挙あり）。**ただしこれはモデルであってどこの法でもない。** 採用州は大きく改変しており、D.C. は 5.4(b) で非弁護士の資本参加を認め、アリゾナは 5.4 自体を撤廃した。米国の判断は必ず**その州の採用版**で行うこと。",
   :legal/retrieved-at "2026-07-26",
   :legal/verification "secondary-source-only",
   :legal/instrument "ABA Model Rules of Professional Conduct",
@@ -2117,6 +2118,7 @@
   :legal/url-provenance "secondary-commentary"}
  {:legal/rule-id "usa.aba-model-rule-5-5",
   :legal/fact-kind "rule",
+  :legal/binding-force "model-only",
   :legal/summary "各法域の規律に反して法律業務を行うこと、および無資格者の法律業務を援助することを禁じる。",
   :legal/retrieved-at "2026-07-26",
   :legal/verification "secondary-source-only",
@@ -2134,6 +2136,7 @@
   :legal/url-provenance "secondary-commentary"}
  {:legal/rule-id "usa.aba-model-rule-7-2b",
   :legal/fact-kind "rule",
+  :legal/binding-force "model-only",
   :legal/summary
   "弁護士は自己のサービスの推薦に対して「anything of value」を与えてはならないが、広告の合理的費用の支払いは例外。lead generator が「弁護士を推薦している」「支払いを受けずに紹介している」「法的問題を分析してどの弁護士に回すか決めている」という印象を与える場合、その支払いは許されない — 事業者が案件を特定の事務所へ割り当てる裁量を持つかどうかが線引きになる。",
   :legal/retrieved-at "2026-07-26",
@@ -2476,16 +2479,17 @@
   :legal/gap "アリゾナ ER 5.5（UPL）が未取得"}
  {:legal/rule-id "usa-dc.rule-5-4",
   :legal/fact-kind "rule",
+  :legal/binding-force "law",
   :legal/summary
   "非弁護士との法律報酬の分配を禁じる（死亡弁護士の遺産への支払い、従業員の利益分配制度、5.4(b) の要件を満たすパートナーシップ、501(c)(3) 非営利団体との分配は例外）。DC は Model Rule と異なり非営利団体との分配を裁判所認定報酬に限定していない。5.4(b) により、唯一の目的が法サービス提供であること等の要件下で非弁護士の資本参加が認められる点でも Model Rule と異なる。",
   :legal/retrieved-at "2026-07-26",
-  :legal/verification "official-url-retrieved",
+  :legal/verification "primary-source-read",
   :legal/instrument
   "District of Columbia Rules of Professional Conduct",
   :legal/quote
-  "A lawyer or law firm shall not share legal fees with a nonlawyer",
+  "(a) A lawyer or law firm shall not share legal fees with a nonlawyer, except that: … (5) A lawyer may share legal fees, whether awarded by a tribunal or received in settlement of a matter, with a nonprofit organization that employed, retained, or recommended employment of the lawyer in the matter and that qualifies under Section 501(c)(3) of the Internal Revenue Code. (b) A lawyer may practice law in a partnership or other form of organization in which a financial interest is held or managerial authority is exercised by an individual nonlawyer who performs professional services which assist the organization in providing legal services to clients, but only if: (1) The partnership or organization has as its sole purpose providing legal services to clients; (2) All persons having such managerial authority or holding a financial interest undertake to abide by these Rules of Professional Conduct; (3) The lawyers … undertake to be responsible for the nonlawyer participants to the same extent as if nonlawyer participants were lawyers under Rule 5.1; (4) The foregoing conditions are set forth in writing. (c) A lawyer shall not permit a person who recommends, employs, or pays the lawyer to render legal services for another to direct or regulate the lawyer's professional judgment in rendering such legal services.",
   :legal/verification-note
-  "D.C. Bar の規則ページを取得して読了。ABA Model Rule そのものではなく DC の採用版。",
+  "D.C. Bar の規則ページを curl で取得し、(a)(b)(c) の全文を抽出して読了。**ABA Model Rule ではなく D.C. が実際に採用している規則**であり、米国でこのカタログが一次で持てている唯一の州法。",
   :legal/jurisdiction "USA-DC",
   :legal/url
   "https://www.dcbar.org/for-lawyers/legal-ethics/rules-of-professional-conduct/law-firms-and-associations/professional-independence-of-a-lawyer",

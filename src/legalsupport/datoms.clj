@@ -43,6 +43,8 @@
       (:rule/quote r) (assoc :legal/quote (:rule/quote r))
       (:rule/summary r) (assoc :legal/summary (:rule/summary r))
       (:rule/verification-note r) (assoc :legal/verification-note (:rule/verification-note r))
+      ;; 拘束力は検証水準とは別の問い。モデル規則は原典を読んでも法ではない。
+      (:rule/binding-force r) (assoc :legal/binding-force (kw->s (:rule/binding-force r)))
       (seq (:rule/topic r)) (assoc :legal/topic (str/join " " (sort (map kw->s (:rule/topic r))))))))
 
 (defn- verdict-entities [id jid]

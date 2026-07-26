@@ -16,7 +16,7 @@ Built on this workspace's
 runtime, following the itonami actor pattern (ADR-2607011000): here it
 is **LegalSupportAdvisor ⊣ LegalSupportGovernor**.
 
-**Maturity: `:implemented`.** 52 tests / 4,395 assertions green
+**Maturity: `:implemented`.** 54 tests / 4,417 assertions green
 (`clojure -M:test`), `clojure -M:lint` clean.
 
 ---
@@ -115,8 +115,18 @@ cannot re-enable them.
 ## Coverage is a gap, not an exclusion
 
 `legalsupport.facts/coverage` reports 15 jurisdictions, 27 cited rules —
-**13 read at the primary source**, 1 retrieved from an official regulator
-page, **13 seen only as secondary commentary**. (It was 8/1/18 until
+**14 read at the primary source** and **13 seen only as secondary
+commentary** (it was 8/1/18 before 2026-07-26).
+
+Verification is not the only axis. **Three of the rules are ABA Model
+Rules, which are not law anywhere** — they are a drafting template that
+binds nobody until a state adopts it, and adopters change it materially
+(D.C. permits nonlawyer ownership under its own 5.4(b); Arizona repealed
+5.4 outright). Citing "Model Rule 5.4" as authority for what a US
+operator may do is a category error, so those rules carry
+`:rule/binding-force :model-only` and `verified-rule?` refuses them
+**even if their text were read at the source**. The only US law the
+catalog holds first-hand is D.C.'s own adopted Rule 5.4. (It was 8/1/18 until
 2026-07-26, when the statute text for 行政書士法19条, 司法書士法3条, RDG
 §2/§3/§10, LASPO 2012 s.56 and Ontario's Law Society Act s.26.1 was
 pulled from the retrieval paths proved out in
@@ -182,7 +192,7 @@ manufacture the very fact that makes the service lawful.
 ## Usage
 
 ```bash
-clojure -M:test          # 52 tests / 4,395 assertions
+clojure -M:test          # 54 tests / 4,417 assertions
 clojure -M:lint          # clj-kondo, errors fail
 clojure -M:emit-datoms   # regenerate data/jurisdiction-rules.datoms.edn
 ```

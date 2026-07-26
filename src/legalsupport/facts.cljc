@@ -95,6 +95,29 @@
 (def verifications
   #{:primary-source-read :official-url-retrieved :secondary-source-only})
 
+(def binding-forces
+  "A rule's force, which is NOT the same question as how well its source
+  was checked. A model rule can be read at the primary source and still
+  bind nobody.
+
+    :law        in force in the jurisdiction it is filed under.
+    :model-only a drafting template with no binding force anywhere until
+                a jurisdiction adopts it — and adopters modify it. The
+                ABA Model Rules forced this field: citing \"Model Rule
+                5.4\" as authority for what a US operator may do is a
+                category error, because the operative law is each state's
+                own adopted version and those differ materially (D.C.
+                permits nonlawyer ownership under its 5.4(b); Arizona
+                repealed 5.4 outright)."
+  #{:law :model-only})
+
+(defn model-only?
+  "True for a rule that is not law anywhere. Such a rule may be held for
+  orientation — it names what states adapt — but must never carry a
+  verdict."
+  [r]
+  (= :model-only (:rule/binding-force r)))
+
 (def verdicts #{:admissible :conditional :prohibited :unsettled})
 
 ;; ---------------------------------------------------------------------------
@@ -642,12 +665,16 @@
     :jurisdiction/legal-system :common-law
     :jurisdiction/note
     (str "米国では法律業務の規律は州ごとに行われ、連邦レベルの統一規則は存在しない。"
-         "ABA Model Rules はモデルにすぎず、各州が採用して初めて拘束力を持つ。"
+         "**ABA Model Rules はどこの法でもない** —— 各州が採用して初めて拘束力を持ち、"
+         "採用州は内容を大きく改変する。収録している3本の Model Rule には"
+         "`:rule/binding-force :model-only` を付けてあり、`verified-rule?` が偽を"
+         "返すので**いかなる許可方向の結論も支えられない**。"
          "したがってこの \"USA\" エントリはすべて :unsettled であり、"
          "USA-DC / USA-AZ / USA-UT の州エントリを見ること。"
          "州エントリが無い州は coverage gap であって「規制が無い州」ではない。")
     :jurisdiction/rules
     [{:rule/id "usa.aba-model-rule-5-4"
+      :rule/binding-force :model-only
       :rule/title "ABA Model Rule 5.4 — Professional Independence of a Lawyer"
       :rule/instrument "ABA Model Rules of Professional Conduct"
       :rule/url "https://www.lawnext.com/2024/12/professional-responsibility-lawyers-call-on-aba-to-modernize-model-rule-5-4-to-allow-fee-sharing-with-non-lawyers.html"
@@ -655,10 +682,15 @@
       :rule/verification :secondary-source-only
       :rule/verification-note "ABA 公式ページは HTTP 403 で取得できず。解説記事の要約のみ。"
       :rule/retrieved-at "2026-07-26"
-      :rule/summary "弁護士・法律事務所は非弁護士と法律報酬を分配してはならない（例外列挙あり）。1983年以来のモデル規則。"
+      :rule/summary
+      (str "弁護士・法律事務所は非弁護士と法律報酬を分配してはならない（例外列挙あり）。"
+           "**ただしこれはモデルであってどこの法でもない。** 採用州は大きく改変して"
+           "おり、D.C. は 5.4(b) で非弁護士の資本参加を認め、アリゾナは 5.4 自体を"
+           "撤廃した。米国の判断は必ず**その州の採用版**で行うこと。")
       :rule/topic #{:fee-sharing}}
 
      {:rule/id "usa.aba-model-rule-5-5"
+      :rule/binding-force :model-only
       :rule/title "ABA Model Rule 5.5 — Unauthorized Practice of Law"
       :rule/instrument "ABA Model Rules of Professional Conduct"
       :rule/url "https://www.law.uh.edu/faculty/adjunct/dstevenson/2019/11a.pdf"
@@ -670,6 +702,7 @@
       :rule/topic #{:unauthorized-practice}}
 
      {:rule/id "usa.aba-model-rule-7-2b"
+      :rule/binding-force :model-only
       :rule/title "ABA Model Rule 7.2(b) — payment for recommending a lawyer's services"
       :rule/instrument "ABA Model Rules of Professional Conduct"
       :rule/url "https://www.isba.org/ibj/2016/04/avvoandtheethicsofleadgeneration"
@@ -696,7 +729,9 @@
                    :condition "州単位の分析が必要。USA-DC / USA-AZ / USA-UT を参照。"}]))
     :jurisdiction/known-gaps
     ["50州+準州のうち3法域しか収載していない"
-     "ABA Model Rules の条文原文が未取得（公式サイトが 403）"
+     "ABA Model Rules の条文原文は取得経路が無い（ABA 公式は 403、Cornell LII は現在ホストしていない）。ただしモデルは法ではないので、原文が取れても verdict の根拠にはならない"
+     "アリゾナ ACJA §7-209 / ER 5.4 撤廃命令は azcourts.gov が curl・WebFetch とも 403 で未取得"
+     "ユタの Supreme Court standing order は utcourts.gov が到達不能で未取得"
      "州ごとの UPL 刑事罰規定が未収載"]}
 
    "USA-DC"
@@ -708,11 +743,33 @@
     [{:rule/id "usa-dc.rule-5-4"
       :rule/title "D.C. Rule of Professional Conduct 5.4 — Professional Independence of a Lawyer"
       :rule/instrument "District of Columbia Rules of Professional Conduct"
-      :rule/quote "A lawyer or law firm shall not share legal fees with a nonlawyer"
+      :rule/binding-force :law
+      :rule/quote
+      (str "(a) A lawyer or law firm shall not share legal fees with a nonlawyer, except "
+           "that: … (5) A lawyer may share legal fees, whether awarded by a tribunal or "
+           "received in settlement of a matter, with a nonprofit organization that "
+           "employed, retained, or recommended employment of the lawyer in the matter and "
+           "that qualifies under Section 501(c)(3) of the Internal Revenue Code. "
+           "(b) A lawyer may practice law in a partnership or other form of organization "
+           "in which a financial interest is held or managerial authority is exercised by "
+           "an individual nonlawyer who performs professional services which assist the "
+           "organization in providing legal services to clients, but only if: (1) The "
+           "partnership or organization has as its sole purpose providing legal services "
+           "to clients; (2) All persons having such managerial authority or holding a "
+           "financial interest undertake to abide by these Rules of Professional Conduct; "
+           "(3) The lawyers … undertake to be responsible for the nonlawyer participants "
+           "to the same extent as if nonlawyer participants were lawyers under Rule 5.1; "
+           "(4) The foregoing conditions are set forth in writing. "
+           "(c) A lawyer shall not permit a person who recommends, employs, or pays the "
+           "lawyer to render legal services for another to direct or regulate the "
+           "lawyer's professional judgment in rendering such legal services.")
       :rule/url "https://www.dcbar.org/for-lawyers/legal-ethics/rules-of-professional-conduct/law-firms-and-associations/professional-independence-of-a-lawyer"
       :rule/url-provenance :official-bar-site
-      :rule/verification :official-url-retrieved
-      :rule/verification-note "D.C. Bar の規則ページを取得して読了。ABA Model Rule そのものではなく DC の採用版。"
+      :rule/verification :primary-source-read
+      :rule/verification-note
+      (str "D.C. Bar の規則ページを curl で取得し、(a)(b)(c) の全文を抽出して読了。"
+           "**ABA Model Rule ではなく D.C. が実際に採用している規則**であり、"
+           "米国でこのカタログが一次で持てている唯一の州法。")
       :rule/retrieved-at "2026-07-26"
       :rule/summary
       (str "非弁護士との法律報酬の分配を禁じる（死亡弁護士の遺産への支払い、"
@@ -1156,11 +1213,14 @@
   (filterv #(contains? (:rule/topic %) topic) (rules jid)))
 
 (defn verified-rule?
-  "True when the rule was checked well enough to support a permissive
-  conclusion. See the namespace docstring for why this asymmetry exists."
+  "True when the rule can support a permissive conclusion: checked well
+  enough AND actually binding. A model rule fails here even if its text
+  was read at the source, because reading a template carefully does not
+  make it law."
   [r]
-  (contains? #{:primary-source-read :official-url-retrieved}
-             (:rule/verification r)))
+  (and (contains? #{:primary-source-read :official-url-retrieved}
+                  (:rule/verification r))
+       (not (model-only? r))))
 
 (defn known-gaps [jid] (get (jurisdiction jid) :jurisdiction/known-gaps []))
 
