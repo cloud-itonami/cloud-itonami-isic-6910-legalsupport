@@ -39,6 +39,17 @@
                                examining and amending — not the mere
                                existence of a lawyer — that makes the
                                service lawful.
+                               The per-reviewer half of this check now
+                               runs in
+                               `cloud-itonami-licensed-operator`
+                               (`licensee/verify`), which was extracted
+                               from this very namespace so that other
+                               regulated-sector actors could reuse it;
+                               violations therefore come back in that
+                               commons' `:req/*` vocabulary. Deciding
+                               *whether* a reviewer is needed stays here
+                               — that turns on the service mode and on
+                               事件性, which are this actor's business.
     6. dispute containment    — a matter with a dispute already arisen
                                (`:dispute?`, 「事件性」) cannot be handled
                                without that licensed reviewer, whatever
@@ -57,7 +68,8 @@
                                to a condition the catalog cannot verify,
                                a human signs each run.
    10. low confidence (< `confidence-floor`)."
-  (:require [legalsupport.admissibility :as adm]
+  (:require [cloud-itonami.licensed-operator.licensee :as lic]
+            [legalsupport.admissibility :as adm]
             [legalsupport.store :as store]))
 
 (def confidence-floor 0.6)
@@ -65,8 +77,30 @@
 (def ^:private always-escalate-ops
   #{:approve-lawyer-introduction :approve-jurisdiction-onboarding})
 
+(def reviewer-requirements
+  "What must be true of the assigned lawyer for the deferral to hold,
+  expressed in `cloud-itonami-licensed-operator`'s vocabulary.
+
+  These three used to be hand-rolled here. They are the same three the
+  commons' catalog declares for `[\"JPN\" :sector/legal-services]
+  :route/defer`, which is not a coincidence — the commons was extracted
+  from this file. Delegating closes the duplication rather than leaving
+  two copies to drift.
+
+  The set is fixed rather than read from the commons catalog because
+  this actor serves 15 jurisdictions and the commons currently holds
+  legal services for Japan only; looking it up would silently drop the
+  checks everywhere else. Widen it here if the commons gains a
+  jurisdiction whose rules differ."
+  #{:req/licence-verified :req/same-jurisdiction :req/personally-decided})
+
 (defn- reviewer-violations
-  "Checks 5 and 6. `m` is the matter, `rv` the assigned lawyer record."
+  "Checks 5 and 6. `m` is the matter, `rv` the assigned lawyer record.
+
+  Whether a reviewer is needed at all is this actor's question (it turns
+  on the service mode and on 事件性), so that stays here. What must be
+  true of the reviewer once one is named is the fleet-wide question, so
+  that goes to `cloud-itonami.licensed-operator.licensee`."
   [m rv service-mode]
   (let [needs? (or (adm/requires-licensed-reviewer? service-mode)
                    (adm/machine-legal-processing? service-mode)
@@ -78,26 +112,18 @@
               "機械が個別事案の法的処理を行うモードである"
               :else "当該 matter に事件性（紛争）がある")]
     (when needs?
-      (cond-> []
-        (nil? rv)
-        (conj {:rule :no-licensed-reviewer
-               :detail (str why "が、レビュー担当弁護士が未登録である。")})
-
-        (and rv (not (:license-verified? rv)))
-        (conj {:rule :reviewer-license-unverified
-               :detail (str "担当弁護士 " (:lawyer-id rv) " の資格が未検証である。")})
-
-        (and rv (not= (:license-jurisdiction rv) (:jurisdiction m)))
-        (conj {:rule :reviewer-wrong-jurisdiction
-               :detail (str "担当弁護士の資格法域 " (pr-str (:license-jurisdiction rv))
-                            " が matter の法域 " (pr-str (:jurisdiction m))
-                            " と一致しない。他法域の資格者によるレビューは"
-                            "レビューとして成立せず、無資格法律業務になりうる。")})
-
-        (and rv (not (:reviewer-self-reviewed? m)))
-        (conj {:rule :reviewer-did-not-self-review
-               :detail (str "担当弁護士が自ら精査し必要に応じ自ら修正した記録が無い。"
-                            "弁護士を割り当てただけではレビューではない。")})))))
+      (if (nil? rv)
+        ;; 空レコードを commons に渡せば3件の要件違反が返るが、ここでは
+        ;; 「なぜレビュアーが要るのか」を1件で伝えるほうが読み手に親切。
+        [{:rule :no-licensed-reviewer
+          :detail (str why "が、レビュー担当弁護士が未登録である。")}]
+        (lic/verify {:holder/id (:lawyer-id rv)
+                     :holder/licence-jurisdiction (:license-jurisdiction rv)
+                     :holder/licence-verified? (:license-verified? rv)}
+                    {:matter/id (:matter-id m)
+                     :matter/jurisdiction (:jurisdiction m)
+                     :matter/personally-decided? (:reviewer-self-reviewed? m)}
+                    reviewer-requirements)))))
 
 (def ^:private prep-ops
   #{:approve-document-preparation :approve-procedure-support})

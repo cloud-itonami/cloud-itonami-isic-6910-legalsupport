@@ -1,5 +1,7 @@
 (ns legalsupport.governor-test
   (:require [clojure.test :refer [deftest is testing]]
+            [cloud-itonami.licensed-operator.catalog :as cat]
+            [cloud-itonami.licensed-operator.licensee :as lic]
             [legalsupport.governor :as governor]
             [legalsupport.store :as store]))
 
@@ -108,7 +110,12 @@
                                   :reviewer-id "L-DE" :reviewer-self-reviewed? true})
       (let [v (check st (assoc base-proposal :matter-id "M-4"))]
         (is (:hard? v))
-        (is (contains? (rules-of v) :reviewer-wrong-jurisdiction))))))
+        (is (contains? (rules-of v) :req/same-jurisdiction)
+            "commons の語彙で返ること（自前チェックは撤去済み）")
+        (is (re-find #"無資格営業"
+                     (:detail (first (filter #(= :req/same-jurisdiction (:rule %))
+                                             (:violations v)))))
+            "説明も commons のものが出ること")))))
 
 (deftest holds-unverified-reviewer-licence
   (let [st (fresh-store)]
@@ -116,7 +123,7 @@
                                 :reviewer-id "L-UNVERIFIED" :reviewer-self-reviewed? true})
     (let [v (check st (assoc base-proposal :matter-id "M-5"))]
       (is (:hard? v))
-      (is (contains? (rules-of v) :reviewer-license-unverified)))))
+      (is (contains? (rules-of v) :req/licence-verified)))))
 
 (deftest holds-when-the-reviewer-did-not-actually-review
   (testing "弁護士を割り当てただけではセーフハーバーに載らない"
@@ -125,7 +132,7 @@
                                   :reviewer-id "L-JP" :reviewer-self-reviewed? false})
       (let [v (check st (assoc base-proposal :matter-id "M-6"))]
         (is (:hard? v))
-        (is (contains? (rules-of v) :reviewer-did-not-self-review))))))
+        (is (contains? (rules-of v) :req/personally-decided))))))
 
 (deftest holds-a-disputed-matter-without-a-reviewer
   (testing "事件性のある案件は、どのモードでも有資格者なしには扱えない"
@@ -182,3 +189,20 @@
       (let [v (check st base-proposal)]
         (is (:hard? v))
         (is (contains? (rules-of v) :revenue-mode-not-admissible))))))
+
+(deftest reviewer-checks-are-delegated-to-the-commons
+  (testing "自前の重複実装を撤去し cloud-itonami-licensed-operator に委ねている"
+    (is (= #{:req/licence-verified :req/same-jurisdiction :req/personally-decided}
+           governor/reviewer-requirements))
+    (testing "commons の catalog が同じ要件を宣言している（抽出元だから一致する）"
+      (is (= governor/reviewer-requirements
+             (get-in cat/catalog [["JPN" :sector/legal-services]
+                                  :route/defer :licensee-requirements]))))
+    (testing "commons 側を壊せばこちらも落ちる = 本当に依存している"
+      (with-redefs [lic/checks (dissoc lic/checks :req/same-jurisdiction)]
+        (let [st (fresh-store)]
+          (store/register-matter! st {:matter-id "M-X" :client-id "c1" :jurisdiction "JPN"
+                                      :reviewer-id "L-DE" :reviewer-self-reviewed? true})
+          (let [v (check st (assoc base-proposal :matter-id "M-X"))]
+            (is (contains? (rules-of v) :unknown-requirement)
+                "実装していない検査を『満たした』ことにはしない、が伝播すること")))))))

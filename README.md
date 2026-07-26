@@ -152,6 +152,13 @@ HARD (always hold, never overridable):
    and a lawyer licensed elsewhere is not a reviewer — cross-border
    review is how a lawyer-in-the-loop design quietly becomes
    unauthorized practice.
+   These three per-reviewer checks now run in
+   [`cloud-itonami-licensed-operator`](https://github.com/cloud-itonami/cloud-itonami-licensed-operator),
+   which was extracted from this repo so other regulated-sector actors
+   could reuse them, so violations come back as `:req/licence-verified`
+   / `:req/same-jurisdiction` / `:req/personally-decided`. Deciding
+   *whether* a reviewer is needed stays here — that turns on the service
+   mode and on 事件性, which are this actor's business.
 6. **dispute containment** — a matter where a dispute has already arisen
    (「事件性」) cannot be handled in any mode without that reviewer.
 
@@ -169,7 +176,7 @@ manufacture the very fact that makes the service lawful.
 ## Usage
 
 ```bash
-clojure -M:test          # 51 tests / 4,391 assertions
+clojure -M:test          # 52 tests / 4,395 assertions
 clojure -M:lint          # clj-kondo, errors fail
 clojure -M:emit-datoms   # regenerate data/jurisdiction-rules.datoms.edn
 ```
@@ -207,6 +214,7 @@ a moving surface and re-verify them.
 
 ## Related repositories
 
+- [`cloud-itonami-licensed-operator`](https://github.com/cloud-itonami/cloud-itonami-licensed-operator) — この repo から抽出した「有資格者の背後で動けるか」の判定 commons。reviewer 検査はここへ委譲済み
 - [`cloud-itonami-isic-6910`](https://github.com/cloud-itonami/cloud-itonami-isic-6910) — same ISIC code, company incorporation / registered-agent scope
 - [`cloud-itonami-isco-2611`](https://github.com/cloud-itonami/cloud-itonami-isco-2611) — a single legal practice's own case-file management
 - [`cloud-itonami-assoc-6910-jpn-nichibenren`](https://github.com/cloud-itonami/cloud-itonami-assoc-6910-jpn-nichibenren) — JFBA self-regulatory rule catalog

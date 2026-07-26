@@ -1,6 +1,10 @@
 {:paths ["src"]
  :deps {io.github.kotoba-lang/langgraph
-        {:git/sha "5b4e5e70837b849b14b6a5800894e3be202ad5fa"}}
+        {:git/sha "5b4e5e70837b849b14b6a5800894e3be202ad5fa"}
+        ;; 有資格者レコードの検査を自前で持たず commons に委ねる
+        ;; （ADR-2607262500 D1 で宣言した「触るついでに寄せる」の履行）。
+        io.github.cloud-itonami/cloud-itonami-licensed-operator
+        {:local/root "../cloud-itonami-licensed-operator"}}
  :aliases
  {;; clj-kondo from deps (no binary), errors fail CI.
   :lint {:replace-deps {clj-kondo/clj-kondo {:mvn/version "2024.11.14"}}
