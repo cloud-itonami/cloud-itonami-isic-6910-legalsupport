@@ -1,0 +1,31 @@
+;; DataScript/Datomic schema for the `legal-jurisdiction-rules` dataset
+;; projected out of `src/legalsupport/facts.cljc` by
+;; `clojure -M:emit-datoms` into `data/jurisdiction-rules.datoms.edn`.
+;;
+;; Joins with the other datasets on the superproject query plane
+;; (ADR-2607252000) via `:legal/jurisdiction` against ISO-3166 alpha-3
+;; codes; sub-national ids ("USA-DC") carry the country prefix so a
+;; prefix match still resolves the country.
+{:source/dataset          {:db/cardinality :db.cardinality/one}
+ :legal/fact-kind         {:db/cardinality :db.cardinality/one}   ; "rule" | "verdict" | "known-gap"
+ :legal/jurisdiction      {:db/cardinality :db.cardinality/one}
+ :legal/rule-id           {:db/unique :db.unique/identity}
+ :legal/rule-title        {:db/cardinality :db.cardinality/one}
+ :legal/instrument        {:db/cardinality :db.cardinality/one}
+ :legal/url               {:db/cardinality :db.cardinality/one}
+ :legal/url-provenance    {:db/cardinality :db.cardinality/one}
+ :legal/verification      {:db/cardinality :db.cardinality/one}   ; primary-source-read | official-url-retrieved | secondary-source-only
+ :legal/verification-note {:db/cardinality :db.cardinality/one}
+ :legal/verified          {:db/cardinality :db.cardinality/one}   ; boolean — may a permissive verdict rest on this?
+ :legal/quote             {:db/cardinality :db.cardinality/one}
+ :legal/summary           {:db/cardinality :db.cardinality/one}
+ :legal/established-date  {:db/cardinality :db.cardinality/one}
+ :legal/retrieved-at      {:db/cardinality :db.cardinality/one}
+ :legal/topic             {:db/cardinality :db.cardinality/one}   ; space-joined blob
+ :legal/mode-kind         {:db/cardinality :db.cardinality/one}   ; "service" | "revenue"
+ :legal/mode              {:db/cardinality :db.cardinality/one}
+ :legal/verdict           {:db/cardinality :db.cardinality/one}   ; admissible | conditional | prohibited | unsettled
+ :legal/basis             {:db/cardinality :db.cardinality/one}   ; space-joined rule ids
+ :legal/basis-count       {:db/cardinality :db.cardinality/one}
+ :legal/condition         {:db/cardinality :db.cardinality/one}
+ :legal/gap               {:db/cardinality :db.cardinality/one}}

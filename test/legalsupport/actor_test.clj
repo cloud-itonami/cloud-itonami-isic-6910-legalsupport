@@ -1,0 +1,90 @@
+(ns legalsupport.actor-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [legalsupport.actor :as actor]
+            [legalsupport.store :as store]))
+
+(defn- fresh-store []
+  (let [st (store/mem-store)]
+    (store/set-operator-config! st {:revenue-mode :revenue/law-firm-saas-license
+                                    :attestations #{}})
+    (store/register-client! st {:client-id "c1" :name "相談者A" :jurisdiction "JPN"})
+    (store/register-lawyer! st {:lawyer-id "L-JP" :name "弁護士B"
+                                :license-jurisdiction "JPN" :bar-number "12345"
+                                :license-verified? true :verified-at "2026-07-01"})
+    (store/register-matter! st {:matter-id "M-1" :client-id "c1" :jurisdiction "JPN"
+                                :subject "業務委託契約書の作成" :dispute? false
+                                :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+    st))
+
+(deftest commits-a-lawyer-reviewed-document-preparation
+  (let [st (fresh-store)
+        graph (actor/build-graph {:store st})
+        request {:client-id "c1" :op :approve-document-preparation :stake :low
+                 :matter-id "M-1" :service-mode :mode/lawyer-reviewed
+                 :output-kind :assembled-document}
+        result (actor/run-request! graph request {} "thread-1")]
+    (is (= :done (:status result)))
+    (is (some? (get-in result [:state :record])))
+    (is (= 1 (count (store/records-of st "c1"))))))
+
+(deftest committed-records-carry-the-legal-basis-they-relied-on
+  (testing "台帳は『何を渡したか』だけでなく『どの出典で適法と判断したか』を持つ"
+    (let [st (fresh-store)
+          graph (actor/build-graph {:store st})
+          request {:client-id "c1" :op :approve-document-preparation :stake :low
+                   :matter-id "M-1" :service-mode :mode/lawyer-reviewed
+                   :output-kind :assembled-document}
+          _ (actor/run-request! graph request {} "thread-2")
+          rec (first (store/records-of st "c1"))]
+      (is (seq (:citations rec)))
+      (is (some #(= "jpn.moj-ai-contract-guideline-2023" (:rule/id %)) (:citations rec)))
+      (is (every? #(re-find #"^https://" (str (:rule/url %))) (:citations rec))))))
+
+(deftest holds-a-matter-in-an-uncatalogued-jurisdiction
+  (let [st (fresh-store)]
+    (store/register-matter! st {:matter-id "M-ZW" :client-id "c1" :jurisdiction "ZWE"
+                                :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+    (let [graph (actor/build-graph {:store st})
+          request {:client-id "c1" :op :approve-document-preparation :stake :low
+                   :matter-id "M-ZW" :service-mode :mode/lawyer-reviewed}
+          result (actor/run-request! graph request {} "thread-3")]
+      (is (= :hold (:disposition (:state result))))
+      (is (empty? (store/records-of st "c1")))
+      (is (= [:hold] (mapv :disposition (store/ledger st)))))))
+
+(deftest holds-lawyer-introduction-in-japan-without-interrupting
+  (testing "日本では取次ぎは人間承認待ちにすらならず、hold として台帳に残る"
+    (let [st (fresh-store)
+          graph (actor/build-graph {:store st})
+          request {:client-id "c1" :op :approve-lawyer-introduction :stake :low
+                   :matter-id "M-1"}
+          result (actor/run-request! graph request {} "thread-4")]
+      (is (= :done (:status result)))
+      (is (= :hold (:disposition (:state result))))
+      (is (empty? (store/records-of st "c1"))))))
+
+(deftest interrupts-attested-analysis-then-commits-on-human-approval
+  (testing "運営者の宣誓でのみ解錠されたモードは、実行ごとに人間承認で止まる"
+    (let [st (fresh-store)
+          _ (store/set-operator-config! st {:attestations #{[:service :mode/legal-analysis]}})
+          graph (actor/build-graph {:store st})
+          request {:client-id "c1" :op :approve-document-preparation :stake :low
+                   :matter-id "M-1" :service-mode :mode/legal-analysis}
+          interrupted (actor/run-request! graph request {} "thread-5")]
+      (is (= :interrupted (:status interrupted)))
+      (is (empty? (store/records-of st "c1")))
+      (let [resumed (actor/approve! graph "thread-5")]
+        (is (= :done (:status resumed)))
+        (is (= 1 (count (store/records-of st "c1"))))))))
+
+(deftest ledger-records-every-disposition
+  (let [st (fresh-store)
+        graph (actor/build-graph {:store st})]
+    (actor/run-request! graph {:client-id "c1" :op :approve-document-preparation
+                               :stake :low :matter-id "M-1"
+                               :service-mode :mode/lawyer-reviewed} {} "t-a")
+    (actor/run-request! graph {:client-id "c1" :op :approve-document-preparation
+                               :stake :low :matter-id "M-1"
+                               :service-mode :mode/legal-analysis} {} "t-b")
+    (is (= [:commit :hold] (mapv :disposition (store/ledger st)))
+        "セーフハーバー経路はコミットされ、機械単独の法的処理は hold される")))

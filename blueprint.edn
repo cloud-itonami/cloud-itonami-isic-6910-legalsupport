@@ -1,0 +1,30 @@
+{:itonami.blueprint/id "cloud-itonami-isic-6910-legalsupport"
+ :itonami.blueprint/name "Governed AI Legal-Document and Procedure Support (jurisdiction-gated, referral-fee-free)"
+ :itonami.blueprint/isic "6910"
+ :itonami.blueprint/isco "2611"
+ :itonami.blueprint/domain :professional-services/legal-document-and-procedure-support
+ :itonami.blueprint/license "AGPL-3.0-or-later"
+ :itonami.blueprint/social-impact [:access-to-justice :consumer-protection :legal-cost-reduction]
+ :itonami.blueprint/governor :legal-support-governor
+ :itonami.blueprint/advisor :legal-support-advisor
+ :itonami.blueprint/robotics false
+ :itonami.blueprint/required-technologies [:langgraph :audit-ledger :jurisdiction-fact-catalog]
+ :itonami.blueprint/status :public-oss
+ :itonami.blueprint/wave 0
+ :itonami.blueprint/revenue-model
+ {:permitted [:revenue/law-firm-saas-license
+              :revenue/consumer-document-fee
+              :revenue/consumer-subscription
+              :revenue/directory-listing-flat]
+  :refused-by-design [:revenue/per-referral-fee :revenue/success-fee-share]
+  :note "収益は書類・手続支援そのものの対価であって、案件の取次ぎの対価ではない。"}
+ :itonami.blueprint/jurisdiction-coverage
+ {:catalogued ["JPN" "GBR" "DEU" "FRA" "USA" "USA-DC" "USA-AZ" "USA-UT"
+               "KOR" "AUS" "CAN-ON" "IND" "SGP" "BRA" "NLD"]
+  :note "未収載法域は『対象外』ではなくカバレッジ未達。既定でいかなるモードも成立と判定しない。"}
+ :itonami.blueprint/related
+ {:isic-6910 "cloud-itonami-isic-6910（会社設立・登記代行。同じ ISIC 内の別スコープ）"
+  :isco-2611 "cloud-itonami-isco-2611（単一法律事務所の案件ファイル管理）"
+  :assoc-6910 "cloud-itonami-assoc-6910-jpn-nichibenren（日弁連 自主規制ルールカタログ）"
+  :isic-7810 "cloud-itonami-isic-7810（雇用仲介。二面マッチングの先行実装）"}
+ :itonami.blueprint/adr "com-junkawasaki/root 90-docs/adr/2607261200-legal-support-jurisdiction-gated-actor.edn"}

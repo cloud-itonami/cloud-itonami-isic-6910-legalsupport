@@ -1,0 +1,184 @@
+(ns legalsupport.governor-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [legalsupport.governor :as governor]
+            [legalsupport.store :as store]))
+
+(defn- fresh-store
+  "A Japanese deployment selling the tool to law firms — the one revenue
+  path the MOJ guideline's §4(1) safe harbour clearly supports."
+  ([] (fresh-store {}))
+  ([cfg]
+   (let [st (store/mem-store)]
+     (store/set-operator-config! st (merge {:revenue-mode :revenue/law-firm-saas-license
+                                            :attestations #{}}
+                                           cfg))
+     (store/register-client! st {:client-id "c1" :name "相談者A" :jurisdiction "JPN"})
+     (store/register-lawyer! st {:lawyer-id "L-JP" :name "弁護士B"
+                                 :license-jurisdiction "JPN" :bar-number "12345"
+                                 :license-verified? true :verified-at "2026-07-01"})
+     (store/register-lawyer! st {:lawyer-id "L-DE" :name "Rechtsanwalt C"
+                                 :license-jurisdiction "DEU" :bar-number "DE-9"
+                                 :license-verified? true :verified-at "2026-07-01"})
+     (store/register-lawyer! st {:lawyer-id "L-UNVERIFIED" :name "自称弁護士D"
+                                 :license-jurisdiction "JPN"
+                                 :license-verified? false})
+     (store/register-matter! st {:matter-id "M-1" :client-id "c1" :jurisdiction "JPN"
+                                 :subject "業務委託契約書の作成"
+                                 :dispute? false
+                                 :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+     st)))
+
+(def ^:private base-proposal
+  {:op :approve-document-preparation
+   :effect :propose
+   :matter-id "M-1"
+   :service-mode :mode/lawyer-reviewed
+   :output-kind :assembled-document
+   :confidence 0.9})
+
+(defn- check [st proposal]
+  (governor/check {:client-id "c1"} {} proposal st))
+
+(defn- rules-of [v] (set (map :rule (:violations v))))
+
+(deftest commits-the-lawyer-reviewed-safe-harbour-path
+  (let [v (check (fresh-store) base-proposal)]
+    (is (true? (:ok? v)) (pr-str (:violations v)))
+    (is (false? (:hard? v)))
+    (is (seq (:citations v)) "成立と判断した根拠の出典が verdict に載ること")))
+
+(deftest holds-unregistered-client
+  (let [st (store/mem-store)]
+    (store/set-operator-config! st {:revenue-mode :revenue/law-firm-saas-license})
+    (is (contains? (rules-of (check st base-proposal)) :no-client))))
+
+(deftest holds-actuation
+  (let [v (check (fresh-store) (assoc base-proposal :effect :execute))]
+    (is (:hard? v))
+    (is (contains? (rules-of v) :no-actuation))))
+
+(deftest holds-unknown-and-mismatched-matter
+  (is (contains? (rules-of (check (fresh-store) (assoc base-proposal :matter-id "NOPE")))
+                 :unknown-matter))
+  (let [st (fresh-store)]
+    (store/register-client! st {:client-id "c2" :name "別人" :jurisdiction "JPN"})
+    (store/register-matter! st {:matter-id "M-2" :client-id "c2" :jurisdiction "JPN"
+                                :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+    (is (contains? (rules-of (check st (assoc base-proposal :matter-id "M-2")))
+                   :matter-wrong-client))))
+
+(deftest holds-matter-in-an-uncatalogued-jurisdiction
+  (testing "研究していない法域の案件は成立と判定されない"
+    (let [st (fresh-store)]
+      (store/register-matter! st {:matter-id "M-ZW" :client-id "c1" :jurisdiction "ZWE"
+                                  :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+      (let [v (check st (assoc base-proposal :matter-id "M-ZW"))]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :service-mode-not-admissible))))))
+
+(deftest holds-referral-compensation-everywhere
+  (testing "送客対価は設計上どの法域でも拒否される"
+    (doseq [rev [:revenue/per-referral-fee :revenue/success-fee-share]]
+      (let [st (fresh-store {:revenue-mode rev})
+            v (check st base-proposal)]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :referral-compensation-refused-by-design)
+            (str rev " が拒否されなかった"))))))
+
+(deftest holds-revenue-mode-that-the-jurisdiction-does-not-establish
+  (testing "サブスクは日本で『報酬を得る目的』を満たす方向なので、無条件では通さない"
+    (let [st (fresh-store {:revenue-mode :revenue/consumer-subscription})
+          v (check st base-proposal)]
+      (is (:hard? v))
+      (is (contains? (rules-of v) :revenue-mode-not-admissible)))))
+
+(deftest holds-machine-legal-processing-without-a-reviewer
+  (let [st (fresh-store)]
+    (store/register-matter! st {:matter-id "M-3" :client-id "c1" :jurisdiction "JPN"
+                                :dispute? false})
+    (let [v (check st (assoc base-proposal :matter-id "M-3"
+                             :service-mode :mode/legal-analysis))]
+      (is (:hard? v))
+      (is (contains? (rules-of v) :no-licensed-reviewer)))))
+
+(deftest holds-reviewer-licensed-in-another-jurisdiction
+  (testing "他法域の資格者によるレビューはレビューとして成立しない"
+    (let [st (fresh-store)]
+      (store/register-matter! st {:matter-id "M-4" :client-id "c1" :jurisdiction "JPN"
+                                  :reviewer-id "L-DE" :reviewer-self-reviewed? true})
+      (let [v (check st (assoc base-proposal :matter-id "M-4"))]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :reviewer-wrong-jurisdiction))))))
+
+(deftest holds-unverified-reviewer-licence
+  (let [st (fresh-store)]
+    (store/register-matter! st {:matter-id "M-5" :client-id "c1" :jurisdiction "JPN"
+                                :reviewer-id "L-UNVERIFIED" :reviewer-self-reviewed? true})
+    (let [v (check st (assoc base-proposal :matter-id "M-5"))]
+      (is (:hard? v))
+      (is (contains? (rules-of v) :reviewer-license-unverified)))))
+
+(deftest holds-when-the-reviewer-did-not-actually-review
+  (testing "弁護士を割り当てただけではセーフハーバーに載らない"
+    (let [st (fresh-store)]
+      (store/register-matter! st {:matter-id "M-6" :client-id "c1" :jurisdiction "JPN"
+                                  :reviewer-id "L-JP" :reviewer-self-reviewed? false})
+      (let [v (check st (assoc base-proposal :matter-id "M-6"))]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :reviewer-did-not-self-review))))))
+
+(deftest holds-a-disputed-matter-without-a-reviewer
+  (testing "事件性のある案件は、どのモードでも有資格者なしには扱えない"
+    (let [st (fresh-store)]
+      (store/register-matter! st {:matter-id "M-7" :client-id "c1" :jurisdiction "JPN"
+                                  :subject "紛争後の和解契約書" :dispute? true})
+      (let [v (check st (assoc base-proposal :matter-id "M-7"
+                               :service-mode :mode/document-assembly))]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :no-licensed-reviewer))))))
+
+(deftest holds-lawyer-introduction-in-japan
+  (testing "72条が周旋を業とすることを禁じているので、日本では取次ぎは escalate ではなく hold"
+    (let [v (check (fresh-store) (assoc base-proposal :op :approve-lawyer-introduction
+                                        :service-mode nil))]
+      (is (:hard? v))
+      (is (contains? (rules-of v) :service-mode-not-admissible)))))
+
+(deftest escalates-lawyer-introduction-where-it-is-merely-conditional
+  (testing "England & Wales では条件付きなので、attestation 付きで人間承認に回る"
+    (let [st (fresh-store {:attestations #{[:service :mode/referral-placement]
+                                           [:revenue :revenue/law-firm-saas-license]}})]
+      (store/register-matter! st {:matter-id "M-GB" :client-id "c1" :jurisdiction "GBR"
+                                  :dispute? false})
+      (let [v (check st (assoc base-proposal :matter-id "M-GB"
+                               :op :approve-lawyer-introduction :service-mode nil))]
+        (is (false? (:hard? v)) (pr-str (:violations v)))
+        (is (true? (:escalate? v)))
+        (is (contains? (set (:escalation-reasons v)) :always-escalate-op))
+        (is (contains? (set (:escalation-reasons v)) :attestation-unlocked-mode))))))
+
+(deftest escalates-low-confidence
+  (let [v (check (fresh-store) (assoc base-proposal :confidence 0.2))]
+    (is (false? (:hard? v)))
+    (is (true? (:escalate? v)))
+    (is (contains? (set (:escalation-reasons v)) :low-confidence))))
+
+(deftest escalates-attestation-unlocked-analysis
+  (testing "カタログが検証できない条件を運営者が宣誓して解錠した実行は毎回人間が見る"
+    (let [st (fresh-store {:attestations #{[:service :mode/legal-analysis]}})
+          v (check st (assoc base-proposal :service-mode :mode/legal-analysis))]
+      (is (false? (:hard? v)) (pr-str (:violations v)))
+      (is (true? (:escalate? v)))
+      (is (contains? (set (:escalation-reasons v)) :attestation-unlocked-mode)))))
+
+(deftest default-operator-config-can-commit-nothing
+  (testing "収益モード未設定のデプロイは何もコミットできない（deny by default）"
+    (let [st (store/mem-store)]
+      (store/register-client! st {:client-id "c1" :name "相談者A"})
+      (store/register-lawyer! st {:lawyer-id "L-JP" :license-jurisdiction "JPN"
+                                  :license-verified? true})
+      (store/register-matter! st {:matter-id "M-1" :client-id "c1" :jurisdiction "JPN"
+                                  :reviewer-id "L-JP" :reviewer-self-reviewed? true})
+      (let [v (check st base-proposal)]
+        (is (:hard? v))
+        (is (contains? (rules-of v) :revenue-mode-not-admissible))))))

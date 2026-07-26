@@ -1,0 +1,124 @@
+(ns legalsupport.facts-test
+  "Integrity tests for the legal-fact catalog. These are the tests that
+  make the catalog trustworthy: they prove that nothing in it asserts a
+  permission without a citation, that no citation points at a rule that
+  does not exist, and that coverage is reported rather than implied."
+  (:require [clojure.test :refer [deftest is testing]]
+            [legalsupport.facts :as facts]))
+
+(defn- all-entries
+  "Every (jurisdiction, kind, mode, entry) tuple in the catalog."
+  []
+  (for [[jid j] facts/catalog
+        [kind k] [[:service :jurisdiction/service-modes]
+                  [:revenue :jurisdiction/revenue-modes]]
+        [mode entry] (get j k)]
+    [jid kind mode entry]))
+
+(deftest every-rule-is-citable
+  (testing "each rule carries an id, a title, a URL, a verification tier and a retrieval date"
+    (doseq [jid (facts/jurisdiction-ids)
+            r (facts/rules jid)]
+      (is (string? (:rule/id r)) (str jid " のルールに :rule/id が無い"))
+      (is (seq (:rule/title r)) (str (:rule/id r) " に :rule/title が無い"))
+      (is (re-find #"^https://" (str (:rule/url r)))
+          (str (:rule/id r) " の :rule/url が https URL でない"))
+      (is (contains? facts/verifications (:rule/verification r))
+          (str (:rule/id r) " の :rule/verification が語彙外"))
+      (is (= "2026-07-26" (:rule/retrieved-at r))
+          (str (:rule/id r) " の :rule/retrieved-at が無い/不一致")))))
+
+(deftest rule-ids-are-globally-unique
+  (let [ids (mapcat #(map :rule/id (facts/rules %)) (facts/jurisdiction-ids))]
+    (is (= (count ids) (count (set ids)))
+        (str "重複した rule id: "
+             (->> ids frequencies (filter #(> (val %) 1)) (map key) vec)))))
+
+(deftest secondary-sources-explain-themselves
+  (testing "a rule that was only read as commentary says so, so a reader can see what is unverified"
+    (doseq [jid (facts/jurisdiction-ids)
+            r (facts/rules jid)
+            :when (= :secondary-source-only (:rule/verification r))]
+      (is (seq (:rule/verification-note r))
+          (str (:rule/id r) " が secondary-source-only なのに検証メモが無い")))))
+
+(deftest every-verdict-is-in-the-vocabulary
+  (doseq [[jid kind mode entry] (all-entries)]
+    (is (contains? facts/verdicts (:verdict entry))
+        (str jid " " kind " " mode " の verdict が語彙外: " (pr-str (:verdict entry))))))
+
+(deftest every-basis-id-resolves
+  (testing "no verdict cites a rule that does not exist in its own jurisdiction"
+    (doseq [[jid kind mode entry] (all-entries)
+            rid (:basis entry)]
+      (is (some? (facts/rule jid rid))
+          (str jid " " kind " " mode " が未定義の rule id を参照: " rid)))))
+
+(deftest permissive-verdicts-are-never-groundless
+  (testing ":admissible は必ず一次/公式で検証済みのルールに支えられる"
+    (doseq [[jid kind mode entry] (all-entries)
+            :when (= :admissible (:verdict entry))]
+      (let [rs (keep #(facts/rule jid %) (:basis entry))]
+        (is (seq rs)
+            (str jid " " kind " " mode " が根拠ゼロで :admissible になっている"))
+        (is (some facts/verified-rule? rs)
+            (str jid " " kind " " mode
+                 " の :admissible が secondary-source-only のみに依拠している"))))))
+
+(deftest restrictive-verdicts-cite-something-or-say-why-not
+  (testing ":prohibited は必ず根拠ルールを挙げる（禁止の捏造も捏造である）"
+    (doseq [[jid kind mode entry] (all-entries)
+            :when (= :prohibited (:verdict entry))]
+      (is (seq (:basis entry))
+          (str jid " " kind " " mode " が根拠ゼロで :prohibited になっている")))))
+
+(deftest unsettled-verdicts-name-the-gap
+  (testing ":unsettled は何が未検証かを述べる"
+    (doseq [[jid kind mode entry] (all-entries)
+            :when (= :unsettled (:verdict entry))]
+      (is (seq (:condition entry))
+          (str jid " " kind " " mode " が :unsettled なのに未検証事項の説明が無い")))))
+
+(deftest every-jurisdiction-covers-every-mode
+  (testing "モードごとの沈黙を許さない — 未研究なら :unsettled と明示すること"
+    (doseq [jid (facts/jurisdiction-ids)]
+      (is (= (set (keys facts/service-modes))
+             (set (keys (get-in facts/catalog [jid :jurisdiction/service-modes]))))
+          (str jid " の service-modes に欠落がある"))
+      (is (= (set (keys facts/revenue-modes))
+             (set (keys (get-in facts/catalog [jid :jurisdiction/revenue-modes]))))
+          (str jid " の revenue-modes に欠落がある")))))
+
+(deftest coverage-is-reported-honestly
+  (let [c (facts/coverage ["JPN" "GBR" "ZWE" "MNG"])]
+    (is (= 4 (:requested c)))
+    (is (= 2 (:covered c)))
+    (is (= ["MNG" "ZWE"] (:missing-jurisdictions c))
+        "未収載の法域は missing として報告されること")
+    (is (pos? (:rule-count c)))
+    (is (contains? (:rules-by-verification c) :primary-source-read)
+        "一次読了ルールが存在すること")
+    (is (seq (:known-gaps c)) "既知の穴が報告されること")))
+
+(deftest japan-guideline-safe-harbour-is-recorded
+  (testing "本製品の日本での成立根拠（法務省ガイドライン第4項）が一次読了で載っている"
+    (let [r (facts/rule "JPN" "jpn.moj-ai-contract-guideline-2023")]
+      (is (some? r))
+      (is (= :primary-source-read (:rule/verification r)))
+      (is (facts/verified-rule? r))
+      (is (re-find #"自ら精査" (:rule/summary r))))
+    (is (= :admissible
+           (get-in facts/catalog ["JPN" :jurisdiction/service-modes
+                                  :mode/lawyer-reviewed :verdict])))))
+
+(deftest referral-placement-is-blocked-where-cited
+  (testing "紹介・送客が禁止と記録されている法域では :prohibited であること"
+    (doseq [jid ["JPN" "IND" "BRA"]]
+      (is (= :prohibited
+             (get-in facts/catalog [jid :jurisdiction/service-modes
+                                    :mode/referral-placement :verdict]))
+          (str jid " の referral-placement が :prohibited でない"))
+      (is (= :prohibited
+             (get-in facts/catalog [jid :jurisdiction/revenue-modes
+                                    :revenue/per-referral-fee :verdict]))
+          (str jid " の per-referral-fee が :prohibited でない")))))

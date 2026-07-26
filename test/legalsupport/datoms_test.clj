@@ -1,0 +1,40 @@
+(ns legalsupport.datoms-test
+  (:require [clojure.test :refer [deftest is testing]]
+            [clojure.edn :as edn]
+            [clojure.java.io :as io]
+            [legalsupport.datoms :as datoms]
+            [legalsupport.facts :as facts]))
+
+(deftest checked-in-projection-is-in-sync-with-the-catalog
+  (testing "data/jurisdiction-rules.datoms.edn は生成物であり、facts と乖離してはならない"
+    (let [f (io/file "data/jurisdiction-rules.datoms.edn")]
+      (is (.exists f) "生成物が未コミット。`clojure -M:emit-datoms` を実行すること")
+      (when (.exists f)
+        (is (= (datoms/datoms) (edn/read-string (slurp f)))
+            "projection が古い。`clojure -M:emit-datoms` で再生成すること")))))
+
+(deftest projection-is-flat-and-scalar
+  (testing "クエリ面はスカラー値しか扱えない — ネストは pr-str 済み blob にしてある"
+    (doseq [e (datoms/datoms)
+            [k v] e]
+      (is (or (string? v) (number? v) (boolean? v) (keyword? v))
+          (str "非スカラー値 " (pr-str k) " -> " (pr-str v))))))
+
+(deftest every-entity-is-attributed-to-this-dataset
+  (doseq [e (datoms/datoms)]
+    (is (= "legal-jurisdiction-rules" (:source/dataset e))
+        "join 面で出自を区別できるよう :source/dataset が必要")
+    (is (contains? #{"rule" "verdict" "known-gap"} (:legal/fact-kind e)))
+    (is (contains? (set (facts/jurisdiction-ids)) (:legal/jurisdiction e)))))
+
+(deftest projection-carries-the-verification-tier
+  (testing "クエリ面からも『どの結論が未検証出典に依っているか』が分かること"
+    (let [rules (filter #(= "rule" (:legal/fact-kind %)) (datoms/datoms))]
+      (is (seq rules))
+      (is (every? #(contains? #{"primary-source-read" "official-url-retrieved"
+                                "secondary-source-only"}
+                              (:legal/verification %))
+                  rules))
+      (is (some :legal/verified rules) "一次/公式検証済みのルールが存在すること")
+      (is (some (complement :legal/verified) rules)
+          "未検証ルールも隠さず載せること（隠すと穴が見えなくなる）"))))
