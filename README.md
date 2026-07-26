@@ -16,7 +16,7 @@ Built on this workspace's
 runtime, following the itonami actor pattern (ADR-2607011000): here it
 is **LegalSupportAdvisor ⊣ LegalSupportGovernor**.
 
-**Maturity: `:implemented`.** 51 tests / 4,391 assertions green
+**Maturity: `:implemented`.** 52 tests / 4,395 assertions green
 (`clojure -M:test`), `clojure -M:lint` clean.
 
 ---
