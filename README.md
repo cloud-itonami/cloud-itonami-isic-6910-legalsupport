@@ -115,8 +115,14 @@ cannot re-enable them.
 ## Coverage is a gap, not an exclusion
 
 `legalsupport.facts/coverage` reports 15 jurisdictions, 27 cited rules —
-8 read at the primary source, 1 retrieved from an official regulator
-page, **18 seen only as secondary commentary**. That last number is
+**13 read at the primary source**, 1 retrieved from an official regulator
+page, **13 seen only as secondary commentary**. (It was 8/1/18 until
+2026-07-26, when the statute text for 行政書士法19条, 司法書士法3条, RDG
+§2/§3/§10, LASPO 2012 s.56 and Ontario's Law Society Act s.26.1 was
+pulled from the retrieval paths proved out in
+`cloud-itonami-licensed-operator`: e-Gov's law API, legislation.gov.uk's
+per-section `data.xml`, gesetze-im-internet.de's `xml.zip` and Ontario
+e-Laws.) That last number is
 published rather than buried, because a rule read only as commentary can
 support a *restrictive* verdict but may never be the sole basis of a
 permissive one. `admissibility/verdict-for` enforces the asymmetry by

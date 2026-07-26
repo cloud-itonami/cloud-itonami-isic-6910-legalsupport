@@ -39,12 +39,23 @@
 
 (deftest secondary-only-permissions-are-downgraded
   (testing "二次情報のみに支えられた :admissible は :unsettled に降格される"
+    ;; 合成の伝聞ルールを注入する。実在の secondary-only ルールを名指しすると、
+    ;; そのルールが一次に格上げされた瞬間にこのテストが機構でなく出典の
+    ;; 都合で落ちる（実際 jpn.gyoseishoshi-ho の格上げで落ちた）。
     (with-redefs [facts/catalog
-                  (assoc-in facts/catalog
-                            ["JPN" :jurisdiction/service-modes :mode/lawyer-directory]
-                            {:verdict :admissible
-                             :basis ["jpn.gyoseishoshi-ho"] ; secondary-source-only
-                             :condition "捏造された許可"})]
+                  (-> facts/catalog
+                      (update-in ["JPN" :jurisdiction/rules]
+                                 conj {:rule/id "synthetic.hearsay"
+                                       :rule/title "伝聞のみのルール"
+                                       :rule/url "https://example.invalid/hearsay"
+                                       :rule/url-provenance :secondary-commentary
+                                       :rule/verification :secondary-source-only
+                                       :rule/verification-note "テスト用の合成ルール"
+                                       :rule/retrieved-at "2026-07-26"})
+                      (assoc-in ["JPN" :jurisdiction/service-modes :mode/lawyer-directory]
+                                {:verdict :admissible
+                                 :basis ["synthetic.hearsay"]
+                                 :condition "捏造された許可"}))]
       (let [v (adm/verdict-for "JPN" :service :mode/lawyer-directory)]
         (is (= :unsettled (:verdict v)))
         (is (= :admissible (:downgraded-from v)))

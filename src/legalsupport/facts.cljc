@@ -194,31 +194,51 @@
       :rule/topic #{:ai-legaltech :governance :forward-looking}}
 
      {:rule/id "jpn.gyoseishoshi-ho"
-      :rule/title "行政書士法 — 官公署提出書類等の作成の独占"
+      :rule/title "行政書士法 第19条（業務の制限）"
       :rule/instrument "行政書士法（昭和26年法律第4号）"
-      :rule/url "https://column.itojuku.co.jp/gyosei/career/dokusengyoumu/"
-      :rule/url-provenance :secondary-commentary
-      :rule/verification :secondary-source-only
+      :rule/quote
+      (str "行政書士又は行政書士法人でない者は、他人の依頼を受けいかなる名目に"
+           "よるかを問わず報酬を得て、業として第一条の三に規定する業務を行うことが"
+           "できない。ただし、他の法律に別段の定めがある場合及び定型的かつ容易に"
+           "行えるものとして総務省令で定める手続について、当該手続に関し相当の経験"
+           "又は能力を有する者として総務省令で定める者が電磁的記録を作成する場合は、"
+           "この限りでない。")
+      :rule/url "https://laws.e-gov.go.jp/api/1/articles;lawNum=昭和二十六年法律第四号;article=19"
+      :rule/url-provenance :official-legislation-api
+      :rule/verification :primary-source-read
       :rule/verification-note
-      (str "解説記事の要約のみ。条番号（1条の2/19条）と原文は未取得のため、"
-           "この rule は制限的 verdict の根拠にしか使えない（admissibility が強制）。"
-           "官公署提出書類を扱う機能を実装する前に原典検証が必須。")
+      (str "e-Gov 法令 API から19条本文を取得して読了。"
+           "なお独占業務の規定は19条であって1条の2ではない（1条の2は職責）。"
+           "19条が参照する第一条の三（業務の範囲）は未取得。")
       :rule/retrieved-at "2026-07-26"
       :rule/summary
-      (str "官公署に提出する書類、権利義務に関する書類、事実証明に関する書類の"
-           "作成は行政書士の独占業務とされる。日本で書類作成支援を有償提供する場合、"
-           "弁護士法72条とは別に行政書士法の制約が重なる。")
+      (str "構造が弁護士法72条とよく似ている —— 『**いかなる名目によるかを問わず"
+           "報酬を得て、業として**』が構成要件。日本で書類作成支援を有償提供する場合、"
+           "72条とは別にこの制限が重なる。"
+           "**但書に電磁的記録の例外がある**点が重要で、定型的かつ容易な手続について"
+           "総務省令が定める者が電磁的記録を作成する場合は制限の外に出る —— "
+           "デジタル書類支援にとって条文上の入口がここに在る。")
       :rule/topic #{:document-assistance :adjacent-profession}}
 
      {:rule/id "jpn.shihoshoshi-ho-3"
-      :rule/title "司法書士法第3条 — 登記・供託手続の代理、法務局提出書類の作成"
-      :rule/instrument "司法書士法"
-      :rule/url "https://www.piyopass.com/blog/shihou-shoshi-gyousei-chigai"
-      :rule/url-provenance :secondary-commentary
-      :rule/verification :secondary-source-only
-      :rule/verification-note "解説記事の要約のみ。原文未取得。制限的 verdict の根拠にのみ使用可。"
+      :rule/title "司法書士法 第3条（業務）"
+      :rule/instrument "司法書士法（昭和25年法律第197号）"
+      :rule/quote
+      (str "司法書士は、この法律の定めるところにより、他人の依頼を受けて、次に掲げる"
+           "事務を行うことを業とする。一 登記又は供託に関する手続について代理すること。"
+           "二 法務局又は地方法務局に提出し、又は提供する書類又は**電磁的記録**…を"
+           "作成すること。… 四 裁判所若しくは検察庁に提出する書類若しくは電磁的記録"
+           "…を作成すること。五 前各号の事務について相談に応ずること。"
+           "六 簡易裁判所における…手続について代理すること。…")
+      :rule/url "https://laws.e-gov.go.jp/api/1/articles;lawNum=昭和二十五年法律第百九十七号;article=3"
+      :rule/url-provenance :official-legislation-api
+      :rule/verification :primary-source-read
+      :rule/verification-note "e-Gov 法令 API から3条本文を取得して読了。"
       :rule/retrieved-at "2026-07-26"
-      :rule/summary "登記・供託手続の代理および法務局・地方法務局提出書類の作成は司法書士の業務範囲。"
+      :rule/summary
+      (str "**書類だけでなく電磁的記録の作成も明文で含む**ので、電子的な書類生成が"
+           "そのまま業務範囲に入る。5号が『相談に応ずること』まで含む点も広い。"
+           "登記・供託・裁判所提出書類を扱う機能は72条の前にこちらに当たる。")
       :rule/topic #{:document-assistance :adjacent-profession}}]
 
     :jurisdiction/service-modes
@@ -370,12 +390,21 @@
       :rule/topic #{:unauthorized-practice :document-assistance}}
 
      {:rule/id "gbr.laspo-2012-s56"
-      :rule/title "LASPO 2012 ss.56-60 — prohibition of referral fees in personal injury claims"
-      :rule/instrument "Legal Aid, Sentencing and Punishment of Offenders Act 2012"
-      :rule/url "https://www.sra.org.uk/solicitors/guidance/prohibition-of-referral-fees-in-laspo-56-60/"
-      :rule/url-provenance :regulator-guidance
-      :rule/verification :secondary-source-only
-      :rule/verification-note "SRA ガイダンスの検索要約のみ。条文原文は未取得。"
+      :rule/title "LASPO 2012 s.56 — rules against referral fees"
+      :rule/instrument "Legal Aid, Sentencing and Punishment of Offenders Act 2012 (c.10)"
+      :rule/quote
+      (str "(1) A regulated person is in breach of this section if— (a) the regulated "
+           "person refers prescribed legal business to another person and is paid or has "
+           "been paid for the referral, or (b) prescribed legal business is referred to "
+           "the regulated person, and the regulated person pays or has paid for the "
+           "referral. (2) A regulated person is also in breach of this section if in "
+           "providing legal services in the course of prescribed legal business the "
+           "regulated person— (a) arranges for another person to provide services to the "
+           "client, and (b) is paid or has been paid for making the arrangement.")
+      :rule/url "https://www.legislation.gov.uk/ukpga/2012/10/section/56"
+      :rule/url-provenance :official-legislation-site
+      :rule/verification :primary-source-read
+      :rule/verification-note "legislation.gov.uk の XML から s.56 本文を取得して読了。"
       :rule/established-date "2013-04-01"
       :rule/retrieved-at "2026-07-26"
       :rule/summary
@@ -490,14 +519,27 @@
       :rule/topic #{:unauthorized-practice :legaltech}}
 
      {:rule/id "deu.rdg"
-      :rule/title "Rechtsdienstleistungsgesetz (RDG) — 法サービスの登録制"
-      :rule/instrument "Rechtsdienstleistungsgesetz"
-      :rule/url "https://der-betrieb.de/meldungen/legal-tech-als-zulaessige-inkassodienstleistung/"
-      :rule/url-provenance :secondary-commentary
-      :rule/verification :secondary-source-only
-      :rule/verification-note "§2/§3/§10 の原文は未取得。制限方向にのみ使用可。"
+      :rule/title "RDG § 2 / § 3 / § 10 — Rechtsdienstleistung の定義・原則禁止・登録による例外"
+      :rule/instrument "Rechtsdienstleistungsgesetz (RDG)"
+      :rule/quote
+      (str "§2(1) Rechtsdienstleistung ist jede Tätigkeit in konkreten fremden "
+           "Angelegenheiten, sobald sie eine rechtliche Prüfung des Einzelfalls erfordert. "
+           "§3 Die selbständige Erbringung außergerichtlicher Rechtsdienstleistungen ist "
+           "unzulässig, soweit sie nicht erlaubt wird … "
+           "§10(1) Natürliche und juristische Personen … die beim Bundesamt für Justiz "
+           "registriert sind …, dürfen aufgrund besonderer Sachkunde Rechtsdienstleistungen "
+           "in folgenden Bereichen erbringen: 1. Inkassodienstleistungen …")
+      :rule/url "https://www.gesetze-im-internet.de/rdg/__2.html"
+      :rule/url-provenance :official-legislation-site
+      :rule/verification :primary-source-read
+      :rule/verification-note
+      "gesetze-im-internet.de の RDG XML（xml.zip）を取得し、§2・§3・§10 を読了。"
       :rule/retrieved-at "2026-07-26"
-      :rule/summary "他人の具体的事案における法的事項の処理は原則として RDG の許可・登録を要する。"
+      :rule/summary
+      (str "境界語は「**個別事案の法的検討を要するか**」で、"
+           "法務省ガイドラインが判断要素として挙げる線とほぼ同じものを"
+           "**定義そのもの**として条文に置いている。§3 が原則禁止、§10 が"
+           "能力分野別の登録で門を開ける構造で、**法人も登録できる**のが日本との違い。")
       :rule/topic #{:unauthorized-practice}}]
 
     :jurisdiction/service-modes
@@ -877,10 +919,20 @@
     [{:rule/id "can-on.law-society-act-s26-1"
       :rule/title "Law Society Act (Ontario) s.26.1 — prohibition on unlicensed practice and provision of legal services"
       :rule/instrument "Law Society Act, R.S.O. 1990, c. L.8"
-      :rule/url "https://www.canlii.org/en/on/laws/stat/rso-1990-c-l8/latest/rso-1990-c-l8.html"
-      :rule/url-provenance :official-legislation-mirror
-      :rule/verification :secondary-source-only
-      :rule/verification-note "CanLII 原文は未取得。検索要約のみ。"
+      :rule/quote
+      (str "26.1 (1) Subject to subsection (5), no person, other than a licensee whose "
+           "licence is not suspended, shall practise law in Ontario or provide legal "
+           "services in Ontario. … 26.2 (1) Every person who contravenes section 26.1 is "
+           "guilty of an offence and on conviction is liable to a fine of, (a) not more "
+           "than $25,000 for a first offence; and (b) not more than $50,000 for each "
+           "subsequent offence.")
+      :rule/url "https://www.ontario.ca/laws/statute/90l08"
+      :rule/url-provenance :official-legislation-site
+      :rule/verification :primary-source-read
+      :rule/verification-note
+      (str "Ontario e-Laws の HTML を取得し、s.26.1(1) と s.26.2(1) を抽出して読了。"
+           "e-Laws は JS レンダリングのため WebFetch では本文が取れず、"
+           "生 HTML から `<p class=\"section\">` 単位で抽出した。")
       :rule/retrieved-at "2026-07-26"
       :rule/summary
       (str "免許停止中でない licensee 以外の者はオンタリオ州で法律実務を行うことも"
