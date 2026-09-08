@@ -16,7 +16,7 @@
   apart from the other datasets sharing the plane."
   (:require [clojure.java.io :as io]
             [clojure.pprint :as pp]
-            [clojure.string :as str]
+            [kotoba.lang.text :as str]
             [legalsupport.facts :as facts]))
 
 (def ^:private out-path "data/jurisdiction-rules.datoms.edn")
