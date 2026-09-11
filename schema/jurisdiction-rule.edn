@@ -1,5 +1,5 @@
 ;; DataScript/Datomic schema for the `legal-jurisdiction-rules` dataset
-;; projected out of `src/legalsupport/facts.cljc` by
+;; projected out of `src/legalsupport/facts.cljk` by
 ;; `clojure -M:emit-datoms` into `data/jurisdiction-rules.datoms.edn`.
 ;;
 ;; Joins with the other datasets on the superproject query plane
