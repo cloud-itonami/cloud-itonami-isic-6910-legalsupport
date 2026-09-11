@@ -8,10 +8,10 @@
 (deftest checked-in-projection-is-in-sync-with-the-catalog
   (testing "data/jurisdiction-rules.datoms.edn は生成物であり、facts と乖離してはならない"
     (let [f (io/file "data/jurisdiction-rules.datoms.edn")]
-      (is (.exists f) "生成物が未コミット。`clojure -M:emit-datoms` を実行すること")
+      (is (.exists f) "生成物が未コミット。`kbb -M:emit-datoms` を実行すること")
       (when (.exists f)
         (is (= (datoms/datoms) (edn/read-string (slurp f)))
-            "projection が古い。`clojure -M:emit-datoms` で再生成すること")))))
+            "projection が古い。`kbb -M:emit-datoms` で再生成すること")))))
 
 (deftest projection-is-flat-and-scalar
   (testing "クエリ面はスカラー値しか扱えない — ネストは pr-str 済み blob にしてある"

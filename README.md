@@ -17,7 +17,7 @@ runtime, following the itonami actor pattern (ADR-2607011000): here it
 is **LegalSupportAdvisor ⊣ LegalSupportGovernor**.
 
 **Maturity: `:implemented`.** 54 tests / 4,417 assertions green
-(`clojure -M:test`), `clojure -M:lint` clean.
+(`kbb -M:test`), `kbb -M:lint` clean.
 
 ---
 
@@ -192,9 +192,9 @@ manufacture the very fact that makes the service lawful.
 ## Usage
 
 ```bash
-clojure -M:test          # 54 tests / 4,417 assertions
-clojure -M:lint          # clj-kondo, errors fail
-clojure -M:emit-datoms   # regenerate data/jurisdiction-rules.datoms.edn
+kbb -M:test          # 54 tests / 4,417 assertions
+kbb -M:lint          # clj-kondo, errors fail
+kbb -M:emit-datoms   # regenerate data/jurisdiction-rules.datoms.edn
 ```
 
 ```clojure
