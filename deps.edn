@@ -16,7 +16,7 @@
          :main-opts    ["-m" "clj-kondo.main"
                         "--lint" "src" "test"
                         "--fail-level" "error"]}
-  ;; clojure -M:emit-datoms -> regenerate data/jurisdiction-rules.datoms.edn
+  ;; kbb -M:emit-datoms -> regenerate data/jurisdiction-rules.datoms.edn
   ;; from src/legalsupport/facts.cljk (generated file, never hand-edited).
   :emit-datoms {:main-opts ["-m" "legalsupport.datoms"]}
   :test {:extra-paths ["test"]

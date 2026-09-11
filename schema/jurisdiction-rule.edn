@@ -1,6 +1,6 @@
 ;; DataScript/Datomic schema for the `legal-jurisdiction-rules` dataset
 ;; projected out of `src/legalsupport/facts.cljk` by
-;; `clojure -M:emit-datoms` into `data/jurisdiction-rules.datoms.edn`.
+;; `kbb -M:emit-datoms` into `data/jurisdiction-rules.datoms.edn`.
 ;;
 ;; Joins with the other datasets on the superproject query plane
 ;; (ADR-2607252000) via `:legal/jurisdiction` against ISO-3166 alpha-3
