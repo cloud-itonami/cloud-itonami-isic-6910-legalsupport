@@ -3,7 +3,7 @@
   make the catalog trustworthy: they prove that nothing in it asserts a
   permission without a citation, that no citation points at a rule that
   does not exist, and that coverage is reported rather than implied."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [legalsupport.facts :as facts]))
 
 (defn- all-entries
