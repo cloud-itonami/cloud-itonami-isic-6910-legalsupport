@@ -1,15 +1,15 @@
 (ns legalsupport.datoms-test
   (:require [clojure.test :refer [deftest is testing]]
             [clojure.edn :as edn]
-            [clojure.java.io :as io]
+            [kotoba.io :as io]
             [legalsupport.datoms :as datoms]
             [legalsupport.facts :as facts]))
 
 (deftest checked-in-projection-is-in-sync-with-the-catalog
   (testing "data/jurisdiction-rules.datoms.edn は生成物であり、facts と乖離してはならない"
     (let [f (io/file "data/jurisdiction-rules.datoms.edn")]
-      (is (.exists f) "生成物が未コミット。`kbb -M:emit-datoms` を実行すること")
-      (when (.exists f)
+      (is (io/exists? f) "生成物が未コミット。`kbb -M:emit-datoms` を実行すること")
+      (when (io/exists? f)
         (is (= (datoms/datoms) (edn/read-string (slurp f)))
             "projection が古い。`kbb -M:emit-datoms` で再生成すること")))))
 
