@@ -30,7 +30,7 @@
      :output-kind   :template | :assembled-document | :procedure-checklist
                     | :legal-analysis
      :stake kw :confidence n :rationale str}"
-  (:require #?(:clj  [clojure.edn :as edn]
+  (:require #?(:clj  [kotoba.lang.edn :as edn]
                :cljs [cljs.reader :as edn])))
 
 (defprotocol Advisor
