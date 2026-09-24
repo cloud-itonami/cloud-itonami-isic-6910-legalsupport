@@ -14,8 +14,8 @@
   values only, collections `pr-str`-ed into string blobs, and
   `:source/dataset \"legal-jurisdiction-rules\"` so results can be told
   apart from the other datasets sharing the plane."
-  (:require [clojure.java.io :as io]
-            [clojure.pprint :as pp]
+  (:require [kotoba.io :as io]
+            [kotoba.pprint :as pp]
             [kotoba.lang.text :as str]
             [legalsupport.facts :as facts]))
 
