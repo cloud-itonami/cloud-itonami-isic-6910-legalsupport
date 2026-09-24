@@ -1,5 +1,5 @@
 (ns legalsupport.governor-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [cloud-itonami.licensed-operator.catalog :as cat]
             [cloud-itonami.licensed-operator.licensee :as lic]
             [legalsupport.governor :as governor]

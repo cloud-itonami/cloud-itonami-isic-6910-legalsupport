@@ -1,5 +1,5 @@
 (ns legalsupport.admissibility-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [legalsupport.facts :as facts]
             [legalsupport.admissibility :as adm]))
 

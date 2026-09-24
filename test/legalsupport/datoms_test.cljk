@@ -1,5 +1,5 @@
 (ns legalsupport.datoms-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [clojure.edn :as edn]
             [kotoba.io :as io]
             [legalsupport.datoms :as datoms]
