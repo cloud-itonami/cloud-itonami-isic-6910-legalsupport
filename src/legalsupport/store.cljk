@@ -1,6 +1,6 @@
 (ns legalsupport.store
   "SSoT for the ISIC Rev.5 6910 AI legal-document and procedure-support
-  actor (itonami actor pattern, ADR-2607011000 / CLAUDE.md Actors
+  actor (itonami actor pattern, ADR-2607011000 / AGENTS.md Actors
   section).
 
   Domain:
